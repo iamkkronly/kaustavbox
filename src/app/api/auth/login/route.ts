@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TelegramClient } from "telegram";
+import { TelegramClient, Api } from "telegram";
 import { StringSession } from "telegram/sessions";
+import { Password } from "telegram/crypto";
 import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   try {
     await client.invoke(
-      new (require("telegram/tl/functions/auth").SignIn)({
+      new Api.auth.SignIn({
         phoneNumber,
         phoneCodeHash,
         phoneCode,
@@ -32,12 +33,12 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
       const { srpId, currentAlgorithm, srpB } = await client.invoke(
-        new (require("telegram/tl/functions/account").GetPassword)()
+        new Api.account.GetPassword()
       );
 
       const { g, p, salt1, salt2 } = currentAlgorithm;
 
-      const { A, M1 } = await (require("telegram/Password").computeCheck)(
+      const { A, M1 } = await Password.computeCheck(
         {
           g,
           p,
@@ -48,13 +49,12 @@ export async function POST(req: NextRequest) {
       );
 
       await client.invoke(
-        new (require("telegram/tl/functions/auth").CheckPassword)({
-          password: {
+        new Api.auth.CheckPassword({
+          password: new Api.InputCheckPasswordSRP({
             srpId,
             A,
             M1,
-            _: "inputCheckPasswordSRP",
-          },
+          }),
         })
       );
     } else {
