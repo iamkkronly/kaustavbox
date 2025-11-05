@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TelegramClient, Api } from "telegram";
 import { StringSession } from "telegram/sessions";
-import { Password } from "telegram/crypto";
+import { computeCheck } from "telegram/client/auth";
 import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
 
       const { g, p, salt1, salt2 } = currentAlgorithm;
 
-      const { A, M1 } = await Password.computeCheck(
+      const { A, M1 } = await computeCheck(
+        client,
         {
           g,
           p,
